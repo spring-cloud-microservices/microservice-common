@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="10 seconds">
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <property name="logging.exception-conversion-word" value="%wEx"/>
+
+    <!-- THIS IS OUR CUSTOM CONTEXT LISTENER (https://stackoverflow.com/questions/1975939/read-environment-variables-from-logback-configuration-file)-->
+    <contextListener class="com.quadbaze.microservice.common.logging.LoggerStartupListener"/>
+
+    <springProperty scope="context" name="ACTIVE_PROFILE" source="spring.profiles.active"/>
+    <springProperty scope="context" name="APPLICATION_NAME" source="spring.application.name"/>
+
+    <property name="LOGGING_HOME" value="${USER_HOME}/microservice/${APPLICATION_NAME}/logs/${ACTIVE_PROFILE}"/>
+    <property name="LOG_FILE_NAME" value="${APPLICATION_NAME}-(${ACTIVE_PROFILE})"/>
+
+    <appender name="CONSOLE_APPENDER" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern> %d{dd-MM-yyyy HH:mm:ss} [%thread] | %-5level | %logger{36}.%M\(%line\) | %msg%n </Pattern>
+        </layout>
+    </appender>
+
+    <appender name="FILE_GENERIC_APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGGING_HOME}/${LOG_FILE_NAME}.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern> %d{dd-MM-yyyy HH:mm:ss} [%thread] | %-5level | %logger{36}.%M\(%line\) | %msg%n </Pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern> ${LOGGING_HOME}/archived/${LOG_FILE_NAME}-%d{dd-MM-yyyy}-%i.log </fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="ERROR_APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGGING_HOME}/error-${LOG_FILE_NAME}.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern> %d{dd-MM-yyyy HH:mm:ss} [%thread] | %-5level | %logger{36}.%M\(%line\) | %msg%n </Pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern> ${LOGGING_HOME}/archived/error-${LOG_FILE_NAME}-%d{dd-MM-yyyy}-%i.log </fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+
+    <springProfile name="dev, test">
+        <root level="INFO">
+            <appender-ref ref="FILE_GENERIC_APPENDER" />
+        </root>
+        <logger name="com.quadbaze.microservice" level="DEBUG" additivity="false">
+            <appender-ref ref="FILE_GENERIC_APPENDER" />
+            <appender-ref ref="CONSOLE_APPENDER" />
+        </logger>
+        <logger name="org.springframework.web" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE_APPENDER" />
+        </logger>
+        <logger name="org.hibernate" level="WARN" additivity="false">
+            <appender-ref ref="CONSOLE_APPENDER" />
+        </logger>
+    </springProfile>
+
+    <springProfile name="prod">
+        <root level="ERROR">
+            <appender-ref ref="ERROR_APPENDER" />
+        </root>
+        <logger name="com.quadbaze.microservice" level="INFO" additivity="false">
+            <appender-ref ref="FILE_GENERIC_APPENDER" />
+        </logger>
+        <logger name="org.springframework.web" level="WARN" additivity="false">
+            <appender-ref ref="FILE_GENERIC_APPENDER" />
+        </logger>
+        <logger name="org.hibernate" level="WARN" additivity="false">
+            <appender-ref ref="FILE_GENERIC_APPENDER" />
+        </logger>
+    </springProfile>
+
+</configuration>
+
+
+
